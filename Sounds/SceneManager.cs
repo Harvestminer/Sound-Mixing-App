@@ -23,6 +23,9 @@ namespace SL
 		public ObservableCollection<Scene> Scenes { get; set; } = new();
 		public MediaPlayer MediaPlayer { get; } = new();
 
-		public SceneManager() => _instance = this;
+		public SceneManager()
+		{
+			_instance = this;
+		}
 	}
 }

@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using System;
+using System.Linq;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -13,15 +14,32 @@ namespace SL
 	/// </summary>
 	public sealed partial class MainWindow : Window
 	{
+		private static MainWindow _instance;
+		public static MainWindow instance
+		{
+			get
+			{
+				if (_instance == null)
+					throw new Exception("SceneManager instance was null.");
+
+				return _instance;
+			}
+		}
+
 		public MainWindow()
 		{
 			this.InitializeComponent();
+			_instance = this;
+
+			SceneGridView.ItemsSource = SceneManager.instance.Scenes;
 		}
 
 		private void AddScene(string name)
 		{
+			if (SceneManager.instance.Scenes.Where(x => x.Name == name).SingleOrDefault() != null)
+				return;
+
 			SceneManager.instance.Scenes.Add(new Scene(name));
-			SceneGridView.ItemsSource = SceneManager.instance.Scenes;
 
 			sceneNameField.Text = string.Empty;
 		}

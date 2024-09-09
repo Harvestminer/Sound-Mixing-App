@@ -1,7 +1,10 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Newtonsoft.Json;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -10,27 +13,39 @@ namespace SL
 {
 	internal class SoundInfo : INotifyPropertyChanged
 	{
-		public MediaSource MediaSource { get; }
-		public MediaPlayer Player { get; }
-		public StorageFile File { get; }
-		public string Title { get; }
-		public string SoundType { get; }
+		public string Title { get; set; } = "N/A";
+		public string FilePath { get; set; }
+		public double Volume { get; set; } = 1d;
 
-		public SoundInfo(StorageFile file, MediaSource mediaSource, MediaPlayer player, string title, string soundtype)
+		[JsonIgnore] public MediaSource MediaSource { get; set; }
+		[JsonIgnore] public MediaPlayer Player { get; }
+
+		public SoundInfo()
 		{
-			this.File = file;
-			this.MediaSource = mediaSource;
-			this.Player = player;
-			this.Title = title;
-			this.SoundType = soundtype;
+			this.Player = new();
+			this.Player.IsLoopingEnabled = true;
+		}
 
-			player.Source = mediaSource;
-			player.IsLoopingEnabled = true;
+		public async Task InitializeMediaSourceAsync(string path)
+		{
+			StorageFile file = await StorageFile.GetFileFromPathAsync(path);
+
+			if (file != null)
+			{
+				MediaSource = MediaSource.CreateFromStorageFile(file);
+				Player.Source = MediaSource;
+				FilePath = file.Path; // Optionally, store the file path
+			}
+			else
+			{
+				throw new InvalidOperationException("StorageFile is null.");
+			}
 		}
 
 		public void VolumeChange(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
 		{
 			Player.Volume = ((Slider)sender).Value / 100d;
+			Volume = Player.Volume;
 		}
 
 		public void SliderLoaded(object sender, RoutedEventArgs e)

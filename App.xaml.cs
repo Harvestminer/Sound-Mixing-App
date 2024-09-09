@@ -1,4 +1,5 @@
 ﻿using Microsoft.UI.Xaml;
+using System.IO;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -17,7 +18,13 @@ namespace SL
 		public App()
 		{
 			this.InitializeComponent();
+
 			new SceneManager();
+
+			foreach (string file in Directory.GetFiles(SaveSystem.SavePath))
+			{
+				SceneManager.instance.Scenes.Add(SaveSystem.LoadScene<Scene>(file));
+			}
 		}
 
 		/// <summary>

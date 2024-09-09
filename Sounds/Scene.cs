@@ -1,10 +1,8 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Windows.Media.Core;
-using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 
@@ -14,10 +12,9 @@ namespace SL
 	{
 		public string Name { get; }
 		public ObservableCollection<SoundInfo> Sounds { get; set; } = new();
-		public List<MediaPlayer> mediaPlayers { get; } = new();
-		public bool IsPlaying { get; private set; } = false;
 
-		public AppBarButton playBtn;
+		[JsonIgnore] public bool IsPlaying { get; private set; } = false;
+		[JsonIgnore] public AppBarButton PlayBtn;
 
 		public Scene(string Name)
 		{
@@ -30,8 +27,8 @@ namespace SL
 			if (Sounds.Count == 0)
 				return;
 
-			if (this.playBtn == null)
-				this.playBtn = ((AppBarButton)sender);
+			if (this.PlayBtn == null)
+				this.PlayBtn = ((AppBarButton)sender);
 
 			foreach (var sound in Sounds)
 			{
@@ -57,15 +54,16 @@ namespace SL
 			sound.Player.Dispose();
 			sound.MediaSource.Dispose();
 
-			this.mediaPlayers.Remove(sound.Player);
 			this.Sounds.Remove(sound);
 
 			// Make sure that when we get rid of a sound that it changes the playBtn to play
-			if (this.playBtn != null && this.IsPlaying && Sounds.Count == 0)
+			if (this.PlayBtn != null && this.IsPlaying && Sounds.Count == 0)
 			{
-				this.playBtn.Icon = new SymbolIcon(Symbol.Play);
+				this.PlayBtn.Icon = new SymbolIcon(Symbol.Play);
 				this.IsPlaying = false;
 			}
+
+			Save();
 		}
 
 		public void DeleteScene()
@@ -79,10 +77,11 @@ namespace SL
 
 			// Remove all data associtated with the scene
 			this.Sounds.Clear();
-			this.mediaPlayers.Clear();
 
 			// Remove scene from scenemanager
 			SceneManager.instance.Scenes.Remove(this);
+
+			SaveSystem.DeleteSave(this);
 		}
 
 		/// <summary>
@@ -104,15 +103,23 @@ namespace SL
 				return;
 
 			// Create data from file
-			MediaPlayer player = new();
-			SoundInfo sound = new(file, MediaSource.CreateFromStorageFile(file), player, file.Name, file.FileType);
+			SoundInfo sound = new()
+			{
+				FilePath = file.Path,
+				Title = file.Name
+			};
+
+			sound.InitializeMediaSourceAsync(file.Path);
 
 			// Add data to lists
 			this.Sounds.Add(sound);
-			this.mediaPlayers.Add(player);
 
 			if (IsPlaying)
-				player.Play();
+				sound.Player.Play();
+
+			Save();
 		}
+
+		public void Save() => SaveSystem.SaveScene(this);
 	}
 }
